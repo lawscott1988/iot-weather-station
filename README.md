@@ -2,6 +2,92 @@
 
 An Arduino Uno project that reads temperature and humidity from a DHT11 sensor and timestamps each reading using a DS3231 RTC (Real Time Clock) module. Readings are printed to the serial monitor in a formatted table.
 
+The long term goal is to evolve this into a full IoT data platform — a fleet of wireless weather stations around the house feeding a data pipeline, compared against official Bureau of Meteorology (BOM) data for Brisbane.
+
+---
+
+## Project roadmap
+
+### Stage 1 — Single wired station ← current
+**Goal:** One sensor, data visible on screen
+
+- [x] Arduino Uno + DHT11 + DS3231
+- [x] PlatformIO + VSCode setup
+- [x] Git repo with branch protection
+- [ ] Python logger saving to CSV locally
+- [ ] README documented
+
+### Stage 2 — Wireless single station
+**Goal:** Cut the USB cable, data flows over WiFi
+
+- [ ] Upgrade to ESP32
+- [ ] Connect to home WiFi
+- [ ] Install local Mosquitto MQTT broker
+- [ ] ESP32 publishes readings to MQTT every 30 seconds
+- [ ] Python ingestion script writes to PostgreSQL + TimescaleDB
+- [ ] Verify data arriving correctly
+
+### Stage 3 — Orchestration with Dagster
+**Goal:** Automate the data flow with proper orchestration
+
+- [ ] Set up Dagster locally
+- [ ] Wrap ingestion script as a Dagster asset
+- [ ] Schedule pipeline to run every 5 minutes
+- [ ] Add alerting if sensor stops sending data
+- [ ] Add data quality checks (e.g. temperature must be between -10 and 60°C)
+
+### Stage 4 — Data modelling with dbt
+**Goal:** Clean, structured, queryable data
+
+- [ ] Set up dbt project on top of PostgreSQL
+- [ ] Write raw, staging, and mart models
+- [ ] Mart models: `hourly_weather`, `daily_weather`, `rolling_7_day`
+- [ ] Add dbt tests (not null, valid ranges, freshness checks)
+- [ ] Integrate dbt runs into Dagster
+
+### Stage 5 — Grafana dashboard
+**Goal:** See your data visually
+
+- [ ] Install Grafana
+- [ ] Build panels: live gauges, 24hr trend, daily min/max, humidity heatmap
+- [ ] Set up Grafana alerts (e.g. notify if humidity exceeds 90%)
+
+### Stage 6 — Fleet of sensors
+**Goal:** Multiple stations around the house and garden
+
+- [ ] Add `station_id` and `location` fields to data model
+- [ ] Flash additional ESP32s with unique station IDs
+- [ ] Each ESP32 publishes to its own MQTT topic (e.g. `weather/backyard`)
+- [ ] Update ingestion to subscribe to `weather/#` (all stations)
+- [ ] Update dbt models and Grafana to show all stations
+
+### Stage 7 — BOM data integration
+**Goal:** Compare local readings against official Brisbane data
+
+- [ ] Pull BOM data via API into PostgreSQL
+- [ ] Write dbt model joining sensor data with BOM data by timestamp
+- [ ] Add Grafana panel comparing readings vs BOM side by side
+- [ ] Identify local microclimate patterns vs official Brisbane Airport station
+
+### Stage 8 — Apache Spark for scale
+**Goal:** Handle large historical datasets and complex analysis
+
+- [ ] Set up Apache Spark
+- [ ] Move heavy transformations to Spark (backfill, anomaly detection, large joins)
+- [ ] Add Spark jobs as Dagster assets
+- [ ] Seasonal pattern analysis, sensor drift detection
+
+### Stage 9 — Productionise
+**Goal:** Reliable, maintainable, scalable system
+
+- [ ] Move broker, database, Dagster, and Grafana to Raspberry Pi or cloud VM
+- [ ] Proper secrets management
+- [ ] Automated database backups
+- [ ] CI/CD for dbt models via GitHub Actions
+- [ ] Full architecture documented
+
+---
+
 ## Hardware
 
 | Component | Purpose |
