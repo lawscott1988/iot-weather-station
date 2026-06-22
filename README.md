@@ -240,6 +240,64 @@ Or use the PlatformIO toolbar buttons at the bottom of VSCode:
 
 ---
 
+## ESP32 troubleshooting
+
+Budget ESP32 boards (such as the DIGISHUO WROOM-32 from Amazon) have some known quirks when uploading for the first time on Windows.
+
+### ESP32 not showing up in Device Manager
+
+Budget ESP32 boards use a USB-to-serial chip that Windows does not include a driver for by default. The two most common chips are **CP2102** (Silicon Labs) and **CH340** (WCH). Plug the ESP32 in and check Device Manager under **Other devices** — it will show either **CP2102 USB to UART Bridge Controller** or **USB-SERIAL CH340** with a yellow warning triangle.
+
+**If you see CP2102 USB to UART Bridge Controller:**
+
+1. Go to [https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers) → **Downloads** tab
+2. Download **CP210x Universal Windows Driver** (the newest version at the top)
+3. Extract the zip to a folder
+4. Right-click **CP2102 USB to UART Bridge Controller** → **Update driver**
+5. Select **"Browse my computer for drivers"**
+6. Browse to the **root** of the extracted folder (not a subfolder)
+7. Make sure **"Include subfolders"** is ticked
+8. Click **Next** — Windows will find and install the correct driver
+9. Unplug and replug the ESP32 — it should now appear as **Silicon Labs CP210x USB to UART Bridge (COMx)** under Ports
+
+**If you see USB-SERIAL CH340:**
+
+1. Go to [https://www.wch-ic.com/downloads/CH341SER_EXE.html](https://www.wch-ic.com/downloads/CH341SER_EXE.html)
+2. Download and run the installer
+3. Unplug and replug the ESP32 — it should now appear as **USB-SERIAL CH340 (COMx)** under Ports
+
+> **Note:** It is safe to have both drivers installed — they do not conflict with each other.
+
+> **Cable check:** make sure you are using a data cable, not a charge-only cable. A charge-only cable will not show up in Device Manager at all, even with the driver installed. If plugging in the ESP32 causes no change in Device Manager, try a different cable first.
+
+### Upload fails with "Write timeout" or hangs at Connecting...
+
+Budget ESP32 boards often omit the auto-reset circuit that triggers bootloader mode automatically during upload. Without it, esptool cannot put the chip into bootloader mode on its own.
+
+**Fix 1 — lower the upload speed** in `platformio.ini`:
+
+```ini
+[env:esp32]
+platform = espressif32
+board = esp32dev
+framework = arduino
+upload_speed = 115200
+```
+
+**Fix 2 — manually trigger bootloader mode** using the two-button sequence:
+
+1. Run `pio run -e esp32 --target upload`
+2. Hold the **BOOT** button on the board
+3. While still holding BOOT, press and release the **EN** (reset) button
+4. Release BOOT
+5. The upload should proceed — you can release BOOT once you see upload progress (`Writing at 0x00010000...`)
+
+> **Why this happens:** the ESP32 needs to be in bootloader mode to accept a firmware upload. Normally a small circuit on the board triggers this automatically via the DTR/RTS pins on the USB chip. Budget boards often omit or poorly implement this circuit, requiring the manual button sequence instead.
+
+> **OTA updates are not affected:** this issue only applies to USB uploads. Once the ESP32 is running and connected to WiFi, over-the-air (OTA) updates work normally without needing the BOOT button.
+
+---
+
 ## Git workflow
 
 This repository protects the `main` branch — all changes must go through a pull request.
